@@ -1,0 +1,65 @@
+name: Create Release
+
+# This workflow creates a GitHub Release when a new tag is pushed
+# Usage: git tag v1.0.0 && git push origin v1.0.0
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: MediCompanion AI ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## MediCompanion AI ${{ steps.get_version.outputs.VERSION }}
+            
+            Download the APK file from the assets below.
+            
+            ### Installation Instructions
+            1. Download the APK file
+            2. Enable "Install from unknown sources" on your Android device
+            3. Install the APK file
+            4. Launch MediCompanion AI
+            
+            ### What's New
+            - Update this section with release notes
+            
+            ### System Requirements
+            - Android 7.0 (API level 24) or higher
+            - 2GB RAM minimum
+            - 100MB free storage
+          draft: false
+          prerelease: false
+      
+      # Optional: Upload APK file if it exists in the releases folder
+      - name: Upload Release APK
+        if: hashFiles('releases/*.apk') != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./releases/MediCompanion-AI-${{ steps.get_version.outputs.VERSION }}.apk
+          asset_name: MediCompanion-AI-${{ steps.get_version.outputs.VERSION }}.apk
+          asset_content_type: application/vnd.android.package-archive
